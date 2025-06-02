@@ -14,16 +14,6 @@ const AccountsSchema = new mongoose.Schema({
     required: [true, 'Name is required'], 
     maxlength: [50, 'Name cannot exceed 50 characters'] 
   },
-  image: { 
-    type: String, 
-    default: 'https://example.com/default-profile-image.jpg', 
-    validate: {
-      validator: function(v) {
-        return /^(http|https):\/\/[^ "]+$/.test(v);
-      },
-      message: 'Image URL must be a valid URL'
-    }
-  },
   email: { 
     type: String, 
     required: [true, 'Email is required'], 
@@ -45,6 +35,16 @@ const AccountsSchema = new mongoose.Schema({
     required: [true, 'Password is required'], 
     minlength: [8, 'Password must be at least 8 characters long'],
     select: false // Prevents password from being returned in queries
+  },
+  image: { 
+    type: String, 
+    default: 'https://example.com/default-profile-image.jpg', 
+    validate: {
+      validator: function(v) {
+        return /^(http|https):\/\/[^ "]+$/.test(v);
+      },
+      message: 'Image URL must be a valid URL'
+    }
   },
   role: { 
     type: String, 
