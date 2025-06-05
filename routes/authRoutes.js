@@ -28,7 +28,7 @@ router.post('/register', async (req, res) => {
       phone,
       address,
       password,
-      image: image || 'https://example.com/default-profile-image.jpg',
+      image: image || 'https://i.redd.it/1to4yvt3i88c1.png',
       role: 'user',
       acc_status: 'active'
     });
