@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
     }
 
     const variants = await ProductVariants.find(query)
-      .populate("pro_id", "Pro_name")
+      .populate("pro_id", "pro_name")
       .populate("color_id", "color_name")
       .populate("size_id", "size_name")
       .populate("image_id", "imageURL");

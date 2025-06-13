@@ -65,16 +65,44 @@ router.get("/", authenticateJWT, async (req, res) => {
     let orderDetails;
     if (req.user.role === "admin" || req.user.role === "manager") {
       orderDetails = await OrderDetails.find()
-        .populate("order_id", "orderDate username totalPrice")
-        .populate("variant_id", "pro_id color_id size_id");
+        .populate({
+          path: "order_id",
+          select: "orderDate totalPrice",
+          populate: {
+            path: "acc_id",
+            select: "username",
+          },
+        })
+        .populate({
+          path: "variant_id",
+          select: "pro_id color_id size_id",
+          populate: [
+            { path: "pro_id", select: "pro_name" },
+            { path: "color_id", select: "color_name" },
+            { path: "size_id", select: "size_name" },
+          ],
+        });
     } else {
-      const userOrders = await Orders.find({ acc_id: req.user.id }).select(
-        "_id"
-      );
+      const userOrders = await Orders.find({ acc_id: req.user.id }).select("_id");
       const orderIds = userOrders.map((order) => order._id);
       orderDetails = await OrderDetails.find({ order_id: { $in: orderIds } })
-        .populate("order_id", "orderDate username totalPrice")
-        .populate("variant_id", "pro_id color_id size_id");
+        .populate({
+          path: "order_id",
+          select: "orderDate totalPrice",
+          populate: {
+            path: "acc_id",
+            select: "username",
+          },
+        })
+        .populate({
+          path: "variant_id",
+          select: "pro_id color_id size_id",
+          populate: [
+            { path: "pro_id", select: "pro_name" },
+            { path: "color_id", select: "color_name" },
+            { path: "size_id", select: "size_name" },
+          ],
+        });
     }
     res.status(200).json(orderDetails);
   } catch (error) {
@@ -90,10 +118,24 @@ router.get("/", authenticateJWT, async (req, res) => {
 // Get a single order detail by ID (Admin/Manager or own order detail for User)
 router.get("/:id", authenticateJWT, async (req, res) => {
   try {
-    const orderDetail = await OrderDetails.findById(req.params.id).populate(
-      "order_id",
-      "orderDate username totalPrice acc_id"
-    );
+    const orderDetail = await OrderDetails.findById(req.params.id)
+      .populate({
+        path: "order_id",
+        select: "orderDate totalPrice acc_id",
+        populate: {
+          path: "acc_id",
+          select: "username",
+        },
+      })
+      .populate({
+        path: "variant_id",
+        select: "pro_id color_id size_id",
+        populate: [
+          { path: "pro_id", select: "pro_name" },
+          { path: "color_id", select: "color_name" },
+          { path: "size_id", select: "size_name" },
+        ],
+      });
     if (!orderDetail) {
       return res.status(404).json({ message: "Order detail not found" });
     }
@@ -161,8 +203,23 @@ router.put("/:id", authenticateJWT, async (req, res) => {
       },
       { new: true, runValidators: true }
     )
-      .populate("order_id", "orderDate username totalPrice")
-      .populate("variant_id", "pro_id color_id size_id");
+      .populate({
+        path: "order_id",
+        select: "orderDate totalPrice",
+        populate: {
+          path: "acc_id",
+          select: "username",
+        },
+      })
+      .populate({
+        path: "variant_id",
+        select: "pro_id color_id size_id",
+        populate: [
+          { path: "pro_id", select: "pro_name" },
+          { path: "color_id", select: "color_name" },
+          { path: "size_id", select: "size_name" },
+        ],
+      });
 
     res.status(200).json({
       message: "Order detail updated successfully",
@@ -200,6 +257,50 @@ router.delete("/:id", authenticateJWT, async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting order detail", error: error.message });
+  }
+});
+
+// Get all order details for a product with non-empty feedback (Admin/Manager or User)
+router.get("/product/:pro_id", async (req, res) => {
+  try {
+    const { pro_id } = req.params;
+
+    // Find variants for the product
+    const variants = await ProductVariants.find({ pro_id }).select("_id");
+    const variantIds = variants.map(variant => variant._id);
+
+    // Find order details with non-empty feedback
+    const orderDetails = await OrderDetails.find({
+      variant_id: { $in: variantIds },
+      feedback_details: { $nin: ["None", "", null] },
+    })
+      .populate({
+        path: "order_id",
+        select: "orderDate totalPrice",
+        populate: {
+          path: "acc_id",
+          select: "username",
+        },
+      })
+      .populate({
+        path: "variant_id",
+        select: "pro_id color_id size_id",
+        populate: [
+          { path: "pro_id", select: "pro_name" },
+          { path: "color_id", select: "color_name" },
+          { path: "size_id", select: "size_name" },
+        ],
+      });
+
+    if (!orderDetails.length) {
+      return res.status(404).json({ message: "No feedback found for this product" });
+    }
+
+    res.status(200).json(orderDetails);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error retrieving product feedback", error: error.message });
   }
 });
 

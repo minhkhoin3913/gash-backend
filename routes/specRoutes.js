@@ -50,7 +50,7 @@ router.post(
 // Get all product images (Public)
 router.get("/image", async (req, res) => {
   try {
-    const images = await ProductImages.find().populate("pro_id", "Pro_name");
+    const images = await ProductImages.find().populate("pro_id", "pro_name");
     res.status(200).json(images);
   } catch (error) {
     res
@@ -70,7 +70,7 @@ router.get("/image/:id", async (req, res) => {
     }
     const image = await ProductImages.findById(req.params.id).populate(
       "pro_id",
-      "Pro_name"
+      "pro_name"
     );
     if (!image) {
       return res.status(404).json({ message: "Product image not found" });
@@ -110,7 +110,7 @@ router.put(
         req.params.id,
         { ...(pro_id && { pro_id }), ...(imageURL && { imageURL }) },
         { new: true, runValidators: true }
-      ).populate("pro_id", "Pro_name");
+      ).populate("pro_id", "pro_name");
       if (!image) {
         return res.status(404).json({ message: "Product image not found" });
       }

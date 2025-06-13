@@ -8,7 +8,7 @@ const categoriesRoutes = require('./routes/categoryRoutes');
 const ordersRoutes = require('./routes/orderRoutes');
 const orderDetailsRoutes = require('./routes/orderDetailRoutes');
 const cartsRoutes = require('./routes/cartRoutes');
-// const favoritesRoutes = require('./routes/Favorites');
+const favoritesRoutes = require('./routes/favoriteRoutes');
 // const importBillRoutes = require('./routes/ImportBill');
 // const importBillDetailsRoutes = require('./routes/ImportBillDetails');
 // const warehousesRoutes = require('./routes/Warehouses');
@@ -28,14 +28,14 @@ app.use('/accounts', accountsRoutes);
 app.use('/products', productsRoutes);
 app.use('/categories', categoriesRoutes);
 app.use('/orders', ordersRoutes);
-app.use('/orderdetails', orderDetailsRoutes);
+app.use('/order-details', orderDetailsRoutes);
 app.use('/carts', cartsRoutes);
 app.use('/variants', productVarRoutes);
-// app.use('/favorites', favoritesRoutes);
+app.use('/favorites', favoritesRoutes);
 // app.use('/importbills', importBillRoutes);
 // app.use('/importbilldetails', importBillDetailsRoutes);
 // app.use('/warehouses', warehousesRoutes);
-app.use('/productspecs', productSpecRoutes);
+app.use('/specifications', productSpecRoutes);
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/ecommerce', {
