@@ -25,12 +25,12 @@ const CartsSchema = new mongoose.Schema({
     type: Number,
     required: [true, "Total price is required"],
     min: [0, "Total price cannot be negative"],
-    validate: {
-      validator: function (v) {
-        return v === this.pro_quantity * this.pro_price;
-      },
-      message: "Total price must equal quantity * price",
-    },
+    // validate: {
+    //   validator: function (v) {
+    //     return v === this.pro_quantity * this.pro_price;
+    //   },
+    //   message: "Total price must equal quantity * price",
+    // },
   },
 });
 

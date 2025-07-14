@@ -3,16 +3,131 @@ const router = express.Router();
 const OrderDetails = require("../models/OrderDetails");
 const Orders = require("../models/Orders");
 const ProductVariants = require("../models/ProductVariants");
-const {
-  authenticateJWT,
-  authorizeRole,
-} = require("../middleware/authMiddleware");
+const Accounts = require("../models/Accounts");
+const { authenticateJWT, authorizeRole } = require("../middleware/authMiddleware");
 
-// Create a new order detail (User for own order, Admin/Manager)
+// Validate date string
+const isValidDate = (dateString) => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
+};
+
+// Advanced search/filter for order details with feedback
+router.get('/search', authenticateJWT, async (req, res) => {
+  try {
+    const {
+      order_id,
+      variant_id,
+      pro_id,
+      color_id,
+      size_id,
+      username,
+      startDate,
+      endDate,
+      feedback,
+      q
+    } = req.query;
+    const query = {
+      feedback_details: { $nin: ['None', '', null] },
+    };
+
+    // Role-based access
+    if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+      // Only feedbacks for user's own orders
+      const userOrders = await Orders.find({ acc_id: req.user.id }).select('_id');
+      const userOrderIds = userOrders.map(order => order._id);
+      query.order_id = { $in: userOrderIds };
+    }
+
+    // Filter by order_id
+    if (order_id) {
+      query.order_id = order_id;
+    }
+
+    // Filter by variant_id
+    if (variant_id) {
+      query.variant_id = variant_id;
+    }
+
+    // Filter by product/color/size via variant
+    if (pro_id || color_id || size_id) {
+      const variantQuery = {};
+      if (pro_id) variantQuery.pro_id = pro_id;
+      if (color_id) variantQuery.color_id = color_id;
+      if (size_id) variantQuery.size_id = size_id;
+      const variants = await ProductVariants.find(variantQuery).select('_id');
+      const variantIds = variants.map(v => v._id);
+      query.variant_id = { $in: variantIds };
+    }
+
+    // Filter by username (account)
+    if (username) {
+      const user = await Accounts.findOne({ username }).select('_id');
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      const userOrders = await Orders.find({ acc_id: user._id }).select('_id');
+      const userOrderIds = userOrders.map(order => order._id);
+      query.order_id = query.order_id
+        ? { $in: userOrderIds.filter(id => query.order_id.$in ? query.order_id.$in.includes(id) : id === query.order_id) }
+        : { $in: userOrderIds };
+    }
+
+    // Date range filter (orderDate)
+    if (startDate || endDate) {
+      const dateQuery = {};
+      if (startDate) dateQuery.$gte = new Date(startDate);
+      if (endDate) {
+        const toDate = new Date(endDate);
+        toDate.setHours(23, 59, 59, 999);
+        dateQuery.$lte = toDate;
+      }
+      const orders = await Orders.find({ orderDate: dateQuery }).select('_id');
+      const orderIds = orders.map(order => order._id);
+      query.order_id = query.order_id
+        ? { $in: orderIds.filter(id => query.order_id.$in ? query.order_id.$in.includes(id) : id === query.order_id) }
+        : { $in: orderIds };
+    }
+
+    // Feedback text filter
+    if (feedback) {
+      query.feedback_details = { $regex: feedback, $options: 'i' };
+    }
+
+    // General search (q)
+    if (q && typeof q === 'string' && q.trim() !== '') {
+      const trimmedQuery = q.trim();
+      query.$or = [
+        { feedback_details: { $regex: trimmedQuery, $options: 'i' } },
+      ];
+    }
+
+    // Find and populate
+    const orderDetails = await OrderDetails.find(query)
+      .populate({
+        path: 'order_id',
+        select: 'orderDate totalPrice acc_id',
+        populate: { path: 'acc_id', select: 'username' },
+      })
+      .populate({
+        path: 'variant_id',
+        select: 'pro_id color_id size_id',
+        populate: [
+          { path: 'pro_id', select: 'pro_name' },
+          { path: 'color_id', select: 'color_name' },
+          { path: 'size_id', select: 'size_name' },
+        ],
+      });
+    res.status(200).json(orderDetails);
+  } catch (error) {
+    res.status(500).json({ message: 'Error searching feedbacks', error: error.message });
+  }
+});
+
+// Create a new order detail
 router.post("/", authenticateJWT, async (req, res) => {
   try {
-    const { order_id, variant_id, UnitPrice, Quantity, feedback_details } =
-      req.body;
+    const { order_id, variant_id, UnitPrice, Quantity, feedback_details } = req.body;
 
     const order = await Orders.findById(order_id);
     if (!order) {
@@ -59,7 +174,7 @@ router.post("/", authenticateJWT, async (req, res) => {
   }
 });
 
-// Get all order details (Admin/Manager or own order details for User)
+// Get all order details
 router.get("/", authenticateJWT, async (req, res) => {
   try {
     let orderDetails;
@@ -115,7 +230,7 @@ router.get("/", authenticateJWT, async (req, res) => {
   }
 });
 
-// Get a single order detail by ID (Admin/Manager or own order detail for User)
+// Get a single order detail by ID
 router.get("/:id", authenticateJWT, async (req, res) => {
   try {
     const orderDetail = await OrderDetails.findById(req.params.id)
@@ -160,7 +275,7 @@ router.get("/:id", authenticateJWT, async (req, res) => {
   }
 });
 
-// Update an order detail (Admin/Manager or own order detail for User)
+// Update an order detail
 router.put("/:id", authenticateJWT, async (req, res) => {
   try {
     const orderDetail = await OrderDetails.findById(req.params.id);
@@ -232,7 +347,7 @@ router.put("/:id", authenticateJWT, async (req, res) => {
   }
 });
 
-// Delete an order detail (Admin/Manager or own order detail for User)
+// Delete an order detail
 router.delete("/:id", authenticateJWT, async (req, res) => {
   try {
     const orderDetail = await OrderDetails.findById(req.params.id);
@@ -260,7 +375,7 @@ router.delete("/:id", authenticateJWT, async (req, res) => {
   }
 });
 
-// Get all order details for a product with non-empty feedback (Admin/Manager or User)
+// Get all order details for a product with non-empty feedback
 router.get("/product/:pro_id", async (req, res) => {
   try {
     const { pro_id } = req.params;

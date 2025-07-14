@@ -24,7 +24,7 @@ router.post(
         !mongoose.isValidObjectId(pro_id) ||
         !mongoose.isValidObjectId(color_id) ||
         !mongoose.isValidObjectId(size_id) ||
-        !mongoose.isValidObjectId(image_id)
+        (image_id && !mongoose.isValidObjectId(image_id))
       ) {
         return res
           .status(400)
@@ -35,14 +35,15 @@ router.post(
         Products.findById(pro_id),
         ProductColors.findById(color_id),
         ProductSizes.findById(size_id),
-        ProductImages.findById(image_id),
+        image_id ? ProductImages.findById(image_id) : Promise.resolve(null),
       ]);
 
       if (!product)
         return res.status(404).json({ message: "Product not found" });
       if (!color) return res.status(404).json({ message: "Color not found" });
       if (!size) return res.status(404).json({ message: "Size not found" });
-      if (!image) return res.status(404).json({ message: "Image not found" });
+      if (image_id && !image)
+        return res.status(404).json({ message: "Image not found" });
 
       const variant = new ProductVariants({
         pro_id,
@@ -66,17 +67,31 @@ router.post(
   }
 );
 
-// Get all product variants (Public), with optional pro_id filter
+// Get all product variants (Public), with optional filters for pro_id, color_id, size_id
 router.get("/", async (req, res) => {
   try {
-    const { pro_id } = req.query;
-    let query = {};
+    const { pro_id, color_id, size_id } = req.query;
+    const query = {};
 
     if (pro_id) {
       if (!mongoose.isValidObjectId(pro_id)) {
         return res.status(400).json({ message: "Invalid product ID" });
       }
-      query = { pro_id: new mongoose.Types.ObjectId(pro_id) };
+      query.pro_id = new mongoose.Types.ObjectId(pro_id);
+    }
+
+    if (color_id) {
+      if (!mongoose.isValidObjectId(color_id)) {
+        return res.status(400).json({ message: "Invalid color ID" });
+      }
+      query.color_id = new mongoose.Types.ObjectId(color_id);
+    }
+
+    if (size_id) {
+      if (!mongoose.isValidObjectId(size_id)) {
+        return res.status(400).json({ message: "Invalid size ID" });
+      }
+      query.size_id = new mongoose.Types.ObjectId(size_id);
     }
 
     const variants = await ProductVariants.find(query)
@@ -105,7 +120,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const variant = await ProductVariants.findById(new mongoose.Types.ObjectId(id))
-      .populate('pro_id', 'Pro_name')
+      .populate('pro_id', 'pro_name')
       .populate('color_id', 'color_name')
       .populate('size_id', 'size_name')
       .populate('image_id', 'imageURL');
@@ -173,7 +188,7 @@ router.put(
         },
         { new: true, runValidators: true }
       )
-        .populate("pro_id", "Pro_name")
+        .populate("pro_id", "pro_name")
         .populate("color_id", "color_name")
         .populate("size_id", "size_name")
         .populate("image_id", "imageURL");

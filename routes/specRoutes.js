@@ -62,6 +62,27 @@ router.get("/image", async (req, res) => {
   }
 });
 
+// Get all product images by product ID (Public)
+router.get("/image/product/:pro_id", async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.pro_id)) {
+      return res.status(400).json({ message: "Invalid product ID" });
+    }
+    const images = await ProductImages.find({ pro_id: req.params.pro_id }).populate("pro_id", "pro_name");
+    if (!images || images.length === 0) {
+      return res.status(404).json({ message: "No images found for this product" });
+    }
+    res.status(200).json(images);
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: "Error retrieving product images",
+        error: error.message,
+      });
+  }
+});
+
 // Get a single product image by ID (Public)
 router.get("/image/:id", async (req, res) => {
   try {
@@ -435,5 +456,71 @@ router.delete(
     }
   }
 );
+
+// --- Search Specifications Routes ---
+
+// Search specifications (Public)
+router.get("/search", async (req, res) => {
+  try {
+    const { q, type } = req.query;
+    let query = {};
+
+    // Type filter (color, size, image)
+    if (type && ['color', 'size', 'image'].includes(type)) {
+      // This will be handled by the specific collection
+    }
+
+    // Text search
+    if (q && typeof q === 'string' && q.trim() !== '') {
+      const trimmedQuery = q.trim();
+      
+      // Check if query is a valid ObjectId for _id search
+      if (mongoose.isValidObjectId(trimmedQuery)) {
+        query.$or = [{ _id: new mongoose.Types.ObjectId(trimmedQuery) }];
+      } else {
+        // Search by name fields
+        if (type === 'color') {
+          query.color_name = { $regex: trimmedQuery, $options: 'i' };
+        } else if (type === 'size') {
+          query.size_name = { $regex: trimmedQuery, $options: 'i' };
+        } else if (type === 'image') {
+          query.imageURL = { $regex: trimmedQuery, $options: 'i' };
+        } else {
+          // Search across all types
+          query.$or = [
+            { color_name: { $regex: trimmedQuery, $options: 'i' } },
+            { size_name: { $regex: trimmedQuery, $options: 'i' } },
+            { imageURL: { $regex: trimmedQuery, $options: 'i' } }
+          ];
+        }
+      }
+    }
+
+    console.log('Search query:', JSON.stringify(query, null, 2));
+    
+    let results = [];
+    
+    // Search in appropriate collections based on type or all if no type specified
+    if (!type || type === 'color') {
+      const colors = await ProductColors.find(query);
+      results.push(...colors.map(color => ({ ...color.toObject(), type: 'color' })));
+    }
+    
+    if (!type || type === 'size') {
+      const sizes = await ProductSizes.find(query);
+      results.push(...sizes.map(size => ({ ...size.toObject(), type: 'size' })));
+    }
+    
+    if (!type || type === 'image') {
+      const images = await ProductImages.find(query).populate('pro_id', 'pro_name');
+      results.push(...images.map(image => ({ ...image.toObject(), type: 'image' })));
+    }
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Search error:', error.message);
+    res.status(500).json({ message: 'Error searching specifications', error: error.message });
+  }
+});
 
 module.exports = router;

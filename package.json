@@ -11,10 +11,18 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@simplewebauthn/server": "^13.1.1",
+    "base64url": "^3.0.1",
     "bcryptjs": "^3.0.2",
+    "cbor-x": "^1.6.0",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "google-auth-library": "^10.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.15.1"
+    "mongoose": "^8.15.1",
+    "vnpay": "^2.3.1"
   }
 }

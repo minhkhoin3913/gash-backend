@@ -61,9 +61,20 @@ router.get('/', authenticateJWT, async (req, res) => {
 // Search orders (Admin/Manager or own orders for User)
 router.get('/search', authenticateJWT, async (req, res) => {
   try {
-    const { q, acc_id } = req.query;
+    const {
+      q,
+      acc_id,
+      order_status,
+      pay_status,
+      shipping_status,
+      dateFrom,
+      dateTo,
+      minPrice,
+      maxPrice
+    } = req.query;
     let query = {};
-    
+
+    // Role-based access
     if (req.user.role !== 'admin' && req.user.role !== 'manager') {
       query.acc_id = req.user.id;
     } else if (acc_id) {
@@ -73,32 +84,64 @@ router.get('/search', authenticateJWT, async (req, res) => {
       query.acc_id = acc_id;
     }
 
+    // Status filters
+    if (order_status) query.order_status = order_status;
+    if (pay_status) query.pay_status = pay_status;
+    if (shipping_status) query.shipping_status = shipping_status;
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      query.orderDate = {};
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        if (!isNaN(fromDate)) query.orderDate.$gte = fromDate;
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        if (!isNaN(toDate)) {
+          toDate.setHours(23, 59, 59, 999);
+          query.orderDate.$lte = toDate;
+        }
+      }
+      if (Object.keys(query.orderDate).length === 0) delete query.orderDate;
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      query.totalPrice = {};
+      if (minPrice && !isNaN(parseFloat(minPrice))) query.totalPrice.$gte = parseFloat(minPrice);
+      if (maxPrice && !isNaN(parseFloat(maxPrice))) query.totalPrice.$lte = parseFloat(maxPrice);
+      if (Object.keys(query.totalPrice).length === 0) delete query.totalPrice;
+    }
+
+    // Search query (q)
     if (q && typeof q === 'string' && q.trim() !== '') {
       const trimmedQuery = q.trim();
       query.$or = [
         { order_status: { $regex: trimmedQuery, $options: 'i' } },
         { pay_status: { $regex: trimmedQuery, $options: 'i' } },
-        { shipping_status: { $regex: trimmedQuery, $options: 'i' } }
+        { shipping_status: { $regex: trimmedQuery, $options: 'i' } },
+        { addressReceive: { $regex: trimmedQuery, $options: 'i' } },
+        { phone: { $regex: trimmedQuery, $options: 'i' } }
       ];
-
       // Check if query is a valid ObjectId for _id search
       if (mongoose.isValidObjectId(trimmedQuery)) {
         query.$or.push({ _id: new mongoose.Types.ObjectId(trimmedQuery) });
       }
-
       // Handle date search (YYYY-MM-DD format)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (dateRegex.test(trimmedQuery)) {
         const startDate = new Date(trimmedQuery);
         const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 1); // Include full day
+        endDate.setDate(endDate.getDate() + 1);
         query.$or.push({
           orderDate: { $gte: startDate, $lt: endDate }
         });
       }
     }
 
-    console.log('Search query:', JSON.stringify(query, null, 2)); // Improved debug log
+    // Debug log
+    // console.log('Order search query:', JSON.stringify(query, null, 2));
     const orders = await Orders.find(query).populate('acc_id', 'username name');
     res.status(200).json(orders);
   } catch (error) {

@@ -126,7 +126,10 @@ router.get("/:id", authenticateJWT, async (req, res) => {
 // Update a cart item (Admin/Manager or own cart for User)
 router.put("/:id", authenticateJWT, async (req, res) => {
   try {
-    const cartItem = await Carts.findById(req.params.id);
+    const cartItem = await Carts.findById(req.params.id).populate({
+      path: "variant_id",
+      populate: { path: "pro_id", select: "pro_price" },
+    });
     if (!cartItem) {
       return res.status(404).json({ message: "Cart item not found" });
     }
@@ -146,25 +149,33 @@ router.put("/:id", authenticateJWT, async (req, res) => {
 
     const { pro_quantity, pro_price, ...updateData } = req.body;
     let Total_price;
-    if (pro_quantity || pro_price) {
-      const newQuantity = pro_quantity || cartItem.pro_quantity;
-      const newPrice = pro_price || cartItem.pro_price;
-      Total_price = newQuantity * newPrice;
+    // Use provided pro_price, existing cartItem.pro_price, or fetch from variant_id.pro_id
+    const priceToUse =
+      pro_price ||
+      cartItem.pro_price ||
+      cartItem.variant_id?.pro_id?.pro_price ||
+      0;
+    const newQuantity = pro_quantity || cartItem.pro_quantity;
+
+    if (newQuantity < 1) {
+      return res.status(400).json({ message: "Quantity must be at least 1" });
     }
+
+    Total_price = newQuantity * priceToUse;
 
     const updatedCartItem = await Carts.findByIdAndUpdate(
       req.params.id,
-      { ...updateData, pro_quantity, pro_price, Total_price },
+      { ...updateData, pro_quantity: newQuantity, pro_price: priceToUse, Total_price },
       { new: true, runValidators: true }
     )
       .populate("acc_id", "username name")
       .populate({
         path: "variant_id",
         populate: [
-          { path: "pro_id", select: "pro_name" },
+          { path: "pro_id", select: "pro_name pro_price" },
           { path: "color_id", select: "color_name" },
           { path: "size_id", select: "size_name" },
-            { path: "image_id", select: "imageURL" },
+          { path: "image_id", select: "imageURL" },
         ],
       });
 
