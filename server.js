@@ -19,7 +19,7 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000' })); // Allow frontend
+app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3001'] })); // Allow frontend
 app.use(express.json());
 
 // Log environment variables for debugging
