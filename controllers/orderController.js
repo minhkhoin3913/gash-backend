@@ -1,4 +1,5 @@
 const orderService = require('../services/orderService');
+const vnpayService = require('../services/vnpayService');
 
 exports.createOrder = async (req, res) => {
   try {
@@ -57,5 +58,33 @@ exports.deleteOrder = async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || 'Error deleting order' });
+  }
+};
+
+exports.createVnpayPaymentUrl = async (req, res) => {
+  try {
+    const { orderId, bankCode, language } = req.body;
+    const paymentUrl = await vnpayService.createPaymentUrl(orderId, bankCode, language, req.user, req);
+    res.json({ paymentUrl });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Error creating payment URL' });
+  }
+};
+
+exports.vnpayReturn = async (req, res) => {
+  try {
+    const result = await vnpayService.handleReturn(req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Payment verification failed' });
+  }
+};
+
+exports.vnpayIpn = async (req, res) => {
+  try {
+    const result = await vnpayService.handleIpn(req.query);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'IPN verification failed' });
   }
 }; 

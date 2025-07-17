@@ -98,7 +98,7 @@ exports.searchOrderDetails = async (queryParams, user) => {
     .populate({
       path: 'order_id',
       select: 'orderDate totalPrice acc_id',
-      populate: { path: 'acc_id', select: 'username' },
+      populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
       path: 'variant_id',
@@ -139,7 +139,7 @@ exports.getAllOrderDetails = async (user) => {
       .populate({
         path: 'order_id',
         select: 'orderDate totalPrice',
-        populate: { path: 'acc_id', select: 'username' },
+        populate: { path: 'acc_id', select: 'username image' },
       })
       .populate({
         path: 'variant_id',
@@ -157,7 +157,7 @@ exports.getAllOrderDetails = async (user) => {
       .populate({
         path: 'order_id',
         select: 'orderDate totalPrice',
-        populate: { path: 'acc_id', select: 'username' },
+        populate: { path: 'acc_id', select: 'username image' },
       })
       .populate({
         path: 'variant_id',
@@ -176,7 +176,7 @@ exports.getOrderDetailById = async (id) => {
     .populate({
       path: 'order_id',
       select: 'orderDate totalPrice acc_id',
-      populate: { path: 'acc_id', select: 'username' },
+      populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
       path: 'variant_id',
@@ -221,7 +221,7 @@ exports.updateOrderDetail = async (id, data, user) => {
     .populate({
       path: 'order_id',
       select: 'orderDate totalPrice',
-      populate: { path: 'acc_id', select: 'username' },
+      populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
       path: 'variant_id',
@@ -260,7 +260,7 @@ exports.getOrderDetailsByProduct = async (pro_id) => {
     .populate({
       path: 'order_id',
       select: 'orderDate totalPrice',
-      populate: { path: 'acc_id', select: 'username' },
+      populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
       path: 'variant_id',
