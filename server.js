@@ -13,6 +13,7 @@ const importBillRoutes = require('./routes/importBillRoutes');
 // const importBillDetailsRoutes = require('./routes/ImportBillDetails');
 // const warehousesRoutes = require('./routes/Warehouses');
 const productSpecRoutes = require('./routes/specRoutes');
+const statisticsRoutes = require('./routes/statisticRoutes');
 const productVarRoutes = require('./routes/variantRoutes');
 require('dotenv').config();
 
@@ -39,6 +40,8 @@ app.use('/imports', importBillRoutes);
 // app.use('/importbilldetails', importBillDetailsRoutes);
 // app.use('/warehouses', warehousesRoutes);
 app.use('/specifications', productSpecRoutes);
+app.use('/statistics', statisticsRoutes);
+
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/ecommerce', {

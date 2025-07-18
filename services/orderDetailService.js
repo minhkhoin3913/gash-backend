@@ -1,4 +1,3 @@
-// orderDetailService.js
 const OrderDetails = require('../models/OrderDetails');
 const Orders = require('../models/Orders');
 const ProductVariants = require('../models/ProductVariants');
@@ -133,42 +132,31 @@ exports.createOrderDetail = async (data, user) => {
   return { status: 201, response: { message: 'Order detail created successfully', orderDetail: savedOrderDetail } };
 };
 
-exports.getAllOrderDetails = async (user) => {
-  if (user.role === 'admin' || user.role === 'manager') {
-    return await OrderDetails.find()
-      .populate({
-        path: 'order_id',
-        select: 'orderDate totalPrice',
-        populate: { path: 'acc_id', select: 'username image' },
-      })
-      .populate({
-        path: 'variant_id',
-        select: 'pro_id color_id size_id',
-        populate: [
-          { path: 'pro_id', select: 'pro_name' },
-          { path: 'color_id', select: 'color_name' },
-          { path: 'size_id', select: 'size_name' },
-        ],
-      });
-  } else {
+exports.getAllOrderDetails = async (user, order_id) => {
+  const query = {};
+  if (user.role !== 'admin' && user.role !== 'manager') {
     const userOrders = await Orders.find({ acc_id: user.id }).select('_id');
     const orderIds = userOrders.map(order => order._id);
-    return await OrderDetails.find({ order_id: { $in: orderIds } })
-      .populate({
-        path: 'order_id',
-        select: 'orderDate totalPrice',
-        populate: { path: 'acc_id', select: 'username image' },
-      })
-      .populate({
-        path: 'variant_id',
-        select: 'pro_id color_id size_id',
-        populate: [
-          { path: 'pro_id', select: 'pro_name' },
-          { path: 'color_id', select: 'color_name' },
-          { path: 'size_id', select: 'size_name' },
-        ],
-      });
+    query.order_id = { $in: orderIds };
   }
+  if (order_id) {
+    query.order_id = order_id;
+  }
+  return await OrderDetails.find(query)
+    .populate({
+      path: 'order_id',
+      select: 'orderDate totalPrice',
+      populate: { path: 'acc_id', select: 'username image' },
+    })
+    .populate({
+      path: 'variant_id',
+      select: 'pro_id color_id size_id',
+      populate: [
+        { path: 'pro_id', select: 'pro_name' },
+        { path: 'color_id', select: 'color_name' },
+        { path: 'size_id', select: 'size_name' },
+      ],
+    });
 };
 
 exports.getOrderDetailById = async (id) => {
@@ -271,4 +259,4 @@ exports.getOrderDetailsByProduct = async (pro_id) => {
         { path: 'size_id', select: 'size_name' },
       ],
     });
-}; 
+};

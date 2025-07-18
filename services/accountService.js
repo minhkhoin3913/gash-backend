@@ -14,7 +14,7 @@ exports.createAccount = async (data) => {
     phone,
     address,
     password,
-    image: image || 'https://i.redd.it/1to4yvt3i88c1.png',
+    image: image || 'http://localhost:4000/default-pfp.jpg',
     role: role || 'user',
     acc_status: 'active'
   });

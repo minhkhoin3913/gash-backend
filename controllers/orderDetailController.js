@@ -1,4 +1,3 @@
-// orderDetailController.js
 const orderDetailService = require('../services/orderDetailService');
 const mongoose = require('mongoose');
 
@@ -25,7 +24,8 @@ exports.createOrderDetail = async (req, res) => {
 // Get all order details
 exports.getAllOrderDetails = async (req, res) => {
   try {
-    const result = await orderDetailService.getAllOrderDetails(req.user);
+    const { order_id } = req.query;
+    const result = await orderDetailService.getAllOrderDetails(req.user, order_id);
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving order details', error: error.message });
@@ -83,4 +83,4 @@ exports.getOrderDetailsByProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving product feedback', error: error.message });
   }
-}; 
+};
