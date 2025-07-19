@@ -16,7 +16,7 @@ const { authenticateJWT, authorizeRole } = require('../middleware/authMiddleware
 router.post('/', authenticateJWT, createOrder);
 router.get('/', authenticateJWT, getAllOrders);
 router.get('/search', authenticateJWT, searchOrders);
-router.get('/payment-url', authenticateJWT, createVnpayPaymentUrl);
+router.post('/payment-url', authenticateJWT, createVnpayPaymentUrl);
 router.get('/vnpay-return', vnpayReturn);
 router.get('/vnpay-ipn', vnpayIpn);
 router.get('/:id', authenticateJWT, getOrderById);

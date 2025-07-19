@@ -64,27 +64,80 @@ exports.deleteOrder = async (req, res) => {
 exports.createVnpayPaymentUrl = async (req, res) => {
   try {
     const { orderId, bankCode, language } = req.body;
+    
+    if (!orderId) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+
     const paymentUrl = await vnpayService.createPaymentUrl(orderId, bankCode, language, req.user, req);
-    res.json({ paymentUrl });
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Payment URL created successfully',
+      paymentUrl 
+    });
   } catch (error) {
-    res.status(error.status || 500).json({ message: error.message || 'Error creating payment URL' });
+    console.error("Payment URL creation error:", error);
+    res.status(error.status || 500).json({ 
+      success: false,
+      message: error.message || 'Error creating payment URL',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
 exports.vnpayReturn = async (req, res) => {
   try {
+    if (!req.query || Object.keys(req.query).length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid return data from VNPay' 
+      });
+    }
+
     const result = await vnpayService.handleReturn(req.query);
-    res.json(result);
+    
+    if (result.code === "00") {
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message,
+        data: result
+      });
+    }
   } catch (error) {
-    res.status(400).json({ message: error.message || 'Payment verification failed' });
+    console.error("VNPay return error:", error);
+    res.status(error.status || 400).json({ 
+      success: false,
+      message: error.message || 'Payment verification failed',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
 exports.vnpayIpn = async (req, res) => {
   try {
+    if (!req.query || Object.keys(req.query).length === 0) {
+      return res.status(400).json({ 
+        RspCode: '99',
+        Message: 'Invalid IPN data' 
+      });
+    }
+
     const result = await vnpayService.handleIpn(req.query);
-    res.json(result);
+    
+    // VNPay yêu cầu response phải có RspCode và Message
+    res.status(200).json(result);
   } catch (error) {
-    res.status(400).json({ message: error.message || 'IPN verification failed' });
+    console.error("VNPay IPN error:", error);
+    res.status(200).json({ 
+      RspCode: '99',
+      Message: 'Internal server error'
+    });
   }
 }; 

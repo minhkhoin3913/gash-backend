@@ -239,8 +239,14 @@ exports.deleteOrderDetail = async (id, user) => {
 };
 
 exports.getOrderDetailsByProduct = async (pro_id) => {
+  if (!mongoose.isValidObjectId(pro_id)) {
+      const err = new Error("Invalid productss ID"); err.status = 400; throw err;
+      console.log("error proId: ", err);
+  }
   const variants = await ProductVariants.find({ pro_id }).select('_id');
+  console.log("variane: ",variants);
   const variantIds = variants.map(variant => variant._id);
+ console.log("variantIds: ", variantIds);
   return await OrderDetails.find({
     variant_id: { $in: variantIds },
     feedback_details: { $nin: ['None', '', null] },

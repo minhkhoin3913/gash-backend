@@ -76,9 +76,7 @@ exports.deleteOrderDetail = async (req, res) => {
 exports.getOrderDetailsByProduct = async (req, res) => {
   try {
     const result = await orderDetailService.getOrderDetailsByProduct(req.params.pro_id);
-    if (!result.length) {
-      return res.status(404).json({ message: 'No feedback found for this product' });
-    }
+    console.log("result : ", result);
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving product feedback', error: error.message });
