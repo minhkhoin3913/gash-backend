@@ -51,25 +51,7 @@ const accountSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended'], 
     default: 'active' 
   },
-  passkeys: [{
-    credential_id: {
-      type: String,
-      required: true,
-      unique: true
-    },
-    public_key: {
-      type: String,
-      required: true
-    },
-    counter: {
-      type: Number,
-      required: true,
-      default: 0
-    },
-    last_used: {
-      type: Date
-    }
-  }]
+  // passkeys field removed
 }, {
   timestamps: true
 });
