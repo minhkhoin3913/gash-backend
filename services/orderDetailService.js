@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const OrderDetails = require('../models/OrderDetails');
 const Orders = require('../models/Orders');
 const ProductVariants = require('../models/ProductVariants');
@@ -96,7 +97,7 @@ exports.searchOrderDetails = async (queryParams, user) => {
   return await OrderDetails.find(query)
     .populate({
       path: 'order_id',
-      select: 'orderDate totalPrice acc_id',
+      select: 'orderDate totalPrice acc_id feedback_order',
       populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
@@ -145,7 +146,7 @@ exports.getAllOrderDetails = async (user, order_id) => {
   return await OrderDetails.find(query)
     .populate({
       path: 'order_id',
-      select: 'orderDate totalPrice',
+      select: 'orderDate totalPrice feedback_order',
       populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
@@ -163,7 +164,7 @@ exports.getOrderDetailById = async (id) => {
   return await OrderDetails.findById(id)
     .populate({
       path: 'order_id',
-      select: 'orderDate totalPrice acc_id',
+      select: 'orderDate totalPrice acc_id feedback_order',
       populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
@@ -208,7 +209,7 @@ exports.updateOrderDetail = async (id, data, user) => {
   )
     .populate({
       path: 'order_id',
-      select: 'orderDate totalPrice',
+      select: 'orderDate totalPrice feedback_order',
       populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({
@@ -253,7 +254,7 @@ exports.getOrderDetailsByProduct = async (pro_id) => {
   })
     .populate({
       path: 'order_id',
-      select: 'orderDate totalPrice',
+      select: 'orderDate totalPrice feedback_order',
       populate: { path: 'acc_id', select: 'username image' },
     })
     .populate({

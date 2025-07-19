@@ -9,7 +9,7 @@ function sortObject(obj) {
   let str = [];
   let key;
   for (key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       str.push(encodeURIComponent(key));
     }
   }
@@ -102,6 +102,7 @@ exports.createPaymentUrl = async (orderId, bankCode, language, user, req) => {
 
 exports.handleReturn = async (vnp_Params) => {
   try {
+    console.log('VNPay Return Params:', vnp_Params);
     validateVNPayParams(vnp_Params);
 
     const secureHash = vnp_Params['vnp_SecureHash'];
@@ -148,6 +149,7 @@ exports.handleReturn = async (vnp_Params) => {
       return { code: rspCode, message: 'Payment failed or cancelled' };
     }
   } catch (error) {
+    console.error('VNPay Return Error:', error);
     throw error;
   }
 };
