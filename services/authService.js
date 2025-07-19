@@ -5,6 +5,7 @@ const { JWT_SECRET } = require('../middleware/authMiddleware');
 const { OAuth2Client } = require('google-auth-library');
 const { generateOTP, storeOTP, verifyStoredOTP } = require('../utils/emailUtils');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const crypto = require('crypto');
 
 exports.register = async (data) => {
   const { username, name, email, phone, address, password, image } = data;
@@ -22,7 +23,7 @@ exports.register = async (data) => {
     phone,
     address,
     password,
-    image: image || 'https://i.redd.it/1to4yvt3i88c1.png',
+    image: image || 'http://localhost:4000/default-pfp.jpg',
     role: 'user',
     acc_status: 'active'
   });
@@ -162,12 +163,15 @@ exports.googleLogin = async (data) => {
   let account = await Accounts.findOne({ email });
   if (!account) {
     const username = email.split('@')[0];
+    // Generate a random secure password for Google accounts
+    const randomPassword = crypto.randomBytes(24).toString('base64');
     account = new Accounts({
       username,
       name: name || username,
       email,
-      image: picture || 'https://i.redd.it/1to4yvt3i88c1.png',
+      image: picture || 'http://localhost:4000/default-pfp.jpg',
       googleId,
+      password: randomPassword,
       role: 'user',
       acc_status: 'active'
     });

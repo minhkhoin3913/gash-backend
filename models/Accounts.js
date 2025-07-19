@@ -29,7 +29,7 @@ const accountSchema = new mongoose.Schema({
   },
   password: { 
     type: String, 
-    required: false,
+    required: true,
     select: null 
   },
   google_id: { 
@@ -39,7 +39,7 @@ const accountSchema = new mongoose.Schema({
   },
   image: { 
     type: String, 
-    default: 'https://i.redd.it/1to4yvt3i88c1.png' 
+    default: 'http://localhost:4000/default-pfp.jpg' 
   },
   role: { 
     type: String, 
