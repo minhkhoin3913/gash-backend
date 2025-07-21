@@ -67,15 +67,19 @@ exports.updateAccount = async (id, data, user) => {
       return { status: 400, response: { message: 'Username or email already exists' } };
     }
   }
-  const account = await Accounts.findByIdAndUpdate(
-    id,
-    { ...updateData, ...(username && { username }), ...(email && { email }) },
-    { new: true, runValidators: true }
-  ).select('-password');
+  const account = await Accounts.findById(id);
   if (!account) {
     return { status: 404, response: { message: 'Account not found' } };
   }
-  return { status: 200, response: { message: 'Account updated successfully', account } };
+  // Update fields
+  if (username) account.username = username;
+  if (email) account.email = email;
+  Object.keys(updateData).forEach(key => {
+    account[key] = updateData[key];
+  });
+  await account.save(); // This will trigger the pre-save hook for password hashing
+  const { password, ...accountObj } = account.toObject();
+  return { status: 200, response: { message: 'Account updated successfully', account: accountObj } };
 };
 
 exports.deleteAccount = async (id, user) => {

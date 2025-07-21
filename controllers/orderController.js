@@ -4,6 +4,11 @@ const vnpayService = require('../services/vnpayService');
 exports.createOrder = async (req, res) => {
   try {
     const savedOrder = await orderService.createOrderService(req.body, req.user);
+    // Emit socket event for real-time updates
+    const io = req.app.get('io');
+    if (io && savedOrder && savedOrder.acc_id) {
+      io.emit('orderUpdated', { userId: savedOrder.acc_id, order: savedOrder });
+    }
     res.status(201).json({
       message: 'Order created successfully',
       order: savedOrder
@@ -14,8 +19,11 @@ exports.createOrder = async (req, res) => {
 };
 
 exports.getAllOrders = async (req, res) => {
+  console.log('[getAllOrders] Endpoint hit', req.method, req.path);
   try {
+    console.log('[getAllOrders] req.user:', req.user);
     const orders = await orderService.getAllOrdersService(req.user);
+    console.log('[getAllOrders] result orders:', orders);
     res.status(200).json(orders);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || 'Error retrieving orders' });
@@ -23,8 +31,12 @@ exports.getAllOrders = async (req, res) => {
 };
 
 exports.searchOrders = async (req, res) => {
+  console.log('[searchOrders] Endpoint hit', req.method, req.path);
   try {
+    console.log('[searchOrders] req.user:', req.user);
+    console.log('[searchOrders] req.query:', req.query);
     const orders = await orderService.searchOrdersService(req.query, req.user);
+    console.log('[searchOrders] result orders:', orders);
     res.status(200).json(orders);
   } catch (error) {
     res.status(error.status || 500).json({ message: error.message || 'Error searching orders' });
@@ -43,6 +55,11 @@ exports.getOrderById = async (req, res) => {
 exports.updateOrder = async (req, res) => {
   try {
     const updatedOrder = await orderService.updateOrderService(req.params.id, req.body, req.user);
+    // Emit socket event for real-time updates
+    const io = req.app.get('io');
+    if (io && updatedOrder && updatedOrder.acc_id) {
+      io.emit('orderUpdated', { userId: updatedOrder.acc_id, order: updatedOrder });
+    }
     res.status(200).json({
       message: 'Order updated successfully',
       order: updatedOrder

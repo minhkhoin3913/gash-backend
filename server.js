@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http'); // <-- Add this
 const authRoutes = require('./routes/authRoutes');
 const accountsRoutes = require('./routes/accountRoutes');
 const productsRoutes = require('./routes/productRoutes');
@@ -18,6 +19,18 @@ const productVarRoutes = require('./routes/variantRoutes');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app); // <-- Create HTTP server
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  },
+});
+
+// Make io accessible in routes/controllers
+app.set('io', io);
 
 // Middleware
 app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:3001'] })); // Allow frontend
@@ -42,7 +55,6 @@ app.use('/imports', importBillRoutes);
 app.use('/specifications', productSpecRoutes);
 app.use('/statistics', statisticsRoutes);
 
-
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/ecommerce', {
   useNewUrlParser: true,
@@ -54,6 +66,14 @@ mongoose.connect('mongodb://localhost:27017/ecommerce', {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => { // <-- Use server.listen
   console.log(`Server running on port ${PORT}`);
+});
+
+// Optionally, handle socket.io connections
+io.on('connection', (socket) => {
+  console.log('A client connected:', socket.id);
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
 });

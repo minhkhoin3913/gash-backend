@@ -1,6 +1,9 @@
 const Orders = require('../models/Orders');
 const Accounts = require('../models/Accounts');
 const mongoose = require('mongoose');
+const OrderDetails = require('../models/OrderDetails');
+const ProductVariants = require('../models/ProductVariants');
+const Products = require('../models/Products');
 
 async function createOrderService(orderData, user) {
   const { acc_id, addressReceive, phone, totalPrice, order_status, pay_status, shipping_status, feedback_order } = orderData;
@@ -83,8 +86,21 @@ async function searchOrdersService(queryParams, user) {
     if (maxPrice && !isNaN(parseFloat(maxPrice))) query.totalPrice.$lte = parseFloat(maxPrice);
     if (Object.keys(query.totalPrice).length === 0) delete query.totalPrice;
   }
+  let orderIdsByProduct = [];
   if (q && typeof q === 'string' && q.trim() !== '') {
     const trimmedQuery = q.trim();
+    // Search OrderDetails for product name
+    const matchingDetails = await OrderDetails.find().populate({
+      path: 'variant_id',
+      populate: {
+        path: 'pro_id',
+        model: 'Products',
+        match: { pro_name: { $regex: trimmedQuery, $options: 'i' } }
+      }
+    });
+    orderIdsByProduct = matchingDetails
+      .filter(d => d.variant_id && d.variant_id.pro_id)
+      .map(d => d.order_id.toString());
     query.$or = [
       { order_status: { $regex: trimmedQuery, $options: 'i' } },
       { pay_status: { $regex: trimmedQuery, $options: 'i' } },
@@ -95,14 +111,9 @@ async function searchOrdersService(queryParams, user) {
     if (mongoose.isValidObjectId(trimmedQuery)) {
       query.$or.push({ _id: new mongoose.Types.ObjectId(trimmedQuery) });
     }
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (dateRegex.test(trimmedQuery)) {
-      const startDate = new Date(trimmedQuery);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 1);
-      query.$or.push({
-        orderDate: { $gte: startDate, $lt: endDate }
-      });
+    // If any orderIdsByProduct found, add to $or
+    if (orderIdsByProduct.length > 0) {
+      query.$or.push({ _id: { $in: orderIdsByProduct } });
     }
   }
   return await Orders.find(query).populate('acc_id', 'username name');
